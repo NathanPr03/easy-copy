@@ -1,3 +1,4 @@
+<!-- panel.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,22 +6,18 @@
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="controls">
-    <label>
-        <input type="checkbox" id="errorFilter" checked />
-        Show Only Errors
-    </label>
+<div class="tab-container">
+    <!-- Tab Buttons -->
+    <div class="tabs">
+        <button class="tab-button active" data-tab="requests">Requests</button>
+        <button class="tab-button" data-tab="settings">Settings</button>
+    </div>
+    <!-- Tab Content Areas -->
+    <div class="tab-content">
+        <div id="requests" class="tab-page active"></div>
+        <div id="settings" class="tab-page"></div>
+    </div>
 </div>
-<table id="requestsTable">
-    <thead>
-    <tr>
-        <th>Method</th>
-        <th>URL</th>
-        <th>Status</th>
-    </tr>
-    </thead>
-    <tbody></tbody>
-</table>
 <script src="panel.js"></script>
 </body>
 </html>

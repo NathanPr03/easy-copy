@@ -3,6 +3,6 @@
   "description": "A custom DevTools panel to display network errors and copy their details.",
   "version": "0.0",
   "manifest_version": 3,
-  "permissions": ["clipboardWrite"],
+  "permissions": ["clipboardWrite", "storage"],
   "devtools_page": "devtools.html"
 }

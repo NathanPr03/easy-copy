@@ -2,25 +2,151 @@ document.addEventListener("DOMContentLoaded", () => {
     const errorFilterCheckbox = document.getElementById("errorFilter");
     const requestsTableBody = document.querySelector("#requestsTable tbody");
     const requests = [];
+    const requestTableTab = "requests";
+    const settingsTab = "settings"
 
-    main(); // Entry point
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabPages = document.querySelectorAll(".tab-page");
 
-    function main() {
+    tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            activateTab(button.getAttribute("data-tab"));
+        });
+    });
+
+    activateTab(requestTableTab); // Entrypoint
+
+    function activateTab(tabId) {
+        // Deactivate all tabs and buttons
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        tabPages.forEach((page) => page.classList.remove("active"));
+
+        // Activate the selected tab and button
+        document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add("active");
+        const tabPage = document.getElementById(tabId);
+        tabPage.classList.add("active");
+
+        // Load content if not already loaded
+        if (!tabPage.dataset.loaded) {
+            loadTabContent(tabId);
+        }
+    }
+
+    function loadTabContent(tabId) {
+        const tabPage = document.getElementById(tabId);
+        const url = chrome.runtime.getURL(`${tabId}.html`);
+
+        fetch(url)
+            .then((response) => response.text())
+            .then((html) => {
+                tabPage.innerHTML = html;
+                tabPage.dataset.loaded = "true"; // Mark as loaded
+
+                if (tabId === requestTableTab) {
+                    const observer = new MutationObserver(() => {
+                        // Once mutations are observed, initialize the tab
+                        observer.disconnect();
+                        console.log("Initializing request table tab...");
+                        initRequestTableTab(tabId);
+                    });
+                } else if (tabId === settingsTab) {
+                    initSettingsTab();
+                }
+            })
+            .catch((error) => {
+                console.error(`Error loading ${tabId} content:`, error);
+                tabPage.innerHTML = "<p>Error loading content.</p>";
+            });
+    }
+
+    function initRequestTableTab() {
         chrome.devtools.network.onRequestFinished.addListener((request) => {
+            console.log("Found request:", request);
             requests.push(request);
             const isError = request.response.status >= 400;
             const showOnlyErrors = errorFilterCheckbox.checked;
 
             if (!showOnlyErrors || isError) {
+                console.log("Adding request to table...");
                 addRequestToTable(request);
             }
+
         });
 
-        // Handle filter checkbox change
         errorFilterCheckbox.addEventListener("change", updateTable);
     }
 
+    function initSettingsTab() {
+        const saveButton = document.getElementById("saveSettings");
+        const resetButton = document.getElementById("resetSettings");
+
+        saveButton.addEventListener("click", () => {
+            saveSettings();
+            alert("Settings saved.");
+        });
+
+        resetButton.addEventListener("click", () => {
+            resetSettings();
+        });
+
+        loadSettings();
+    }
+
+    function resetSettings() {
+        document.getElementById('resetSettings').addEventListener('click', () => {
+            const form = document.getElementById('settingsForm');
+            const defaultSettings = getDefaultSettings();
+
+            for (const [key, value] of Object.entries(defaultSettings)) {
+                const checkbox = form.elements[key];
+                if (checkbox) {
+                    checkbox.checked = value;
+                }
+            }
+        });
+    }
+
+    function getDefaultSettings() {
+        return {
+            requestMethod: true,
+            requestUrl: true,
+            requestHeaders: false,
+            requestBody: true,
+            responseStatus: true,
+            responseHeaders: true,
+            responseBody: true,
+        };
+    }
+    function saveSettings() {
+        const form = document.getElementById("settingsForm");
+        const formData = new FormData(form);
+        const settings = {};
+
+        for (const [key, value] of formData.entries()) {
+            settings[key] = value === "on";
+        }
+
+        chrome.storage.local.set({ copySettings: settings }, () => {
+            console.log("Settings saved.");
+        });
+    }
+
+    function loadSettings() {
+        const form = document.getElementById("settingsForm");
+        chrome.storage.local.get(["copySettings"], (result) => {
+            const settings = result.copySettings || getDefaultSettings();
+
+            for (const [key, value] of Object.entries(settings)) {
+                const checkbox = form.elements[key];
+                if (checkbox) {
+                    checkbox.checked = value;
+                }
+            }
+        });
+    }
+
     function updateTable() {
+        console.log("Updating table...");
         requestsTableBody.innerHTML = "";
         const showOnlyErrors = errorFilterCheckbox.checked;
 
@@ -60,24 +186,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function copyRequestDetails(request) {
-        const details = {
-            url: request.request.url,
-            method: request.request.method,
-            requestHeaders: request.request.headers,
-            requestBody: request.request.postData
-                ? request.request.postData.text
-                : "",
-            status: request.response.status,
-            statusText: request.response.statusText,
-            responseHeaders: request.response.headers,
-            responseBody: "",
-        };
-
-        details.responseBody = await new Promise((resolve) => {
-            request.getContent((content) => {
-                resolve(content);
+        const settings = await new Promise((resolve) => {
+            chrome.storage.local.get(['copySettings'], (result) => {
+                resolve(result.copySettings || getDefaultSettings());
             });
         });
+
+        const details = {};
+
+        if (settings.url) details.url = request.request.url;
+        if (settings.method) details.method = request.request.method;
+        if (settings.requestHeaders) details.requestHeaders = request.request.headers;
+        if (settings.requestBody && request.request.postData) {
+            details.requestBody = request.request.postData.text;
+        }
+        if (settings.status) details.status = request.response.status;
+        if (settings.statusText) details.statusText = request.response.statusText;
+        if (settings.responseHeaders) details.responseHeaders = request.response.headers;
+
+        if (settings.responseBody) {
+            try {
+                details.responseBody = await new Promise((resolve) => {
+                    request.getContent((content) => {
+                        resolve(content);
+                    });
+                });
+            } catch (err) {
+                console.error("Failed to retrieve response body: ", err);
+            }
+        }
 
         request.getContent((content, encoding) => {
             details.responseBody = content;

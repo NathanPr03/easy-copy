@@ -1,7 +1,36 @@
 <h2>Settings</h2>
 <form id="settingsForm">
-    <!-- Settings fields -->
-    <!-- ... (as previously defined) -->
+    <fieldset>
+        <legend>Request Fields</legend>
+        <label>
+            <input type="checkbox" name="url" /> URL
+        </label><br />
+        <label>
+            <input type="checkbox" name="method" /> Method
+        </label><br />
+        <label>
+            <input type="checkbox" name="requestHeaders" /> Request Headers
+        </label><br />
+        <label>
+            <input type="checkbox" name="requestBody" /> Request Body
+        </label><br />
+    </fieldset>
+    <fieldset>
+        <legend>Response Fields</legend>
+        <label>
+            <input type="checkbox" name="status" /> Status
+        </label><br />
+        <label>
+            <input type="checkbox" name="statusText" /> Status Text
+        </label><br />
+        <label>
+            <input type="checkbox" name="responseHeaders" /> Response Headers
+        </label><br />
+        <label>
+            <input type="checkbox" name="responseBody" /> Response Body
+        </label><br />
+    </fieldset>
 </form>
 <button type="button" id="saveSettings">Save</button>
 <button type="button" id="resetSettings">Reset to Defaults</button>
+
