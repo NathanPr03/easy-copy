@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const errorFilterCheckbox = document.getElementById("errorFilter");
-    const requestsTableBody = document.querySelector("#requestsTable tbody");
+    let errorFilterCheckbox = null;
+    let requestsTableBody = null;
     const requests = [];
     const requestTableTab = "requests";
     const settingsTab = "settings"
@@ -43,12 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 tabPage.dataset.loaded = "true"; // Mark as loaded
 
                 if (tabId === requestTableTab) {
-                    const observer = new MutationObserver(() => {
-                        // Once mutations are observed, initialize the tab
-                        observer.disconnect();
-                        console.log("Initializing request table tab...");
+                    console.log("Initializing request table tab high...");
+                    setTimeout(() => {
                         initRequestTableTab(tabId);
-                    });
+                    }, 0);
+                    console.log("Initializing request table tab...");
                 } else if (tabId === settingsTab) {
                     initSettingsTab();
                 }
@@ -60,6 +59,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function initRequestTableTab() {
+        // Init vars now we have new HTML loaded
+        errorFilterCheckbox = document.getElementById("errorFilter");
+        requestsTableBody = document.querySelector("#requestsTable tbody");
+
         chrome.devtools.network.onRequestFinished.addListener((request) => {
             console.log("Found request:", request);
             requests.push(request);
@@ -113,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             requestHeaders: false,
             requestBody: true,
             responseStatus: true,
-            responseHeaders: true,
+            responseHeaders: false,
             responseBody: true,
         };
     }
