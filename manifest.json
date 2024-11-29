@@ -4,5 +4,5 @@
   "version": "0.0",
   "manifest_version": 3,
   "permissions": ["clipboardWrite", "storage"],
-  "devtools_page": "devtools.html"
+  "devtools_page": "src/html/devtools.html"
 }
