@@ -63,21 +63,41 @@ document.addEventListener("DOMContentLoaded", () => {
         errorFilterCheckbox = document.getElementById("errorFilter");
         requestsTableBody = document.querySelector("#requestsTable tbody");
 
+        const port = chrome.runtime.connect({ name: "devtools-panel" });
+
+        // Request stored network requests
+        port.postMessage({ action: "getNetworkRequests" });
+
+        // Listen for messages from devtools.js
+        port.onMessage.addListener((msg) => {
+            if (msg.action === "networkRequests") {
+                // Receive the stored network requests
+                const storedRequests = msg.data;
+                requests.push(...storedRequests);
+
+                updateTable();
+
+                setupNetworkListener();
+            }
+        });
+
+        errorFilterCheckbox.addEventListener("change", updateTable);
+    }
+
+    function setupNetworkListener() {
+        // Listen to new network requests
         chrome.devtools.network.onRequestFinished.addListener((request) => {
-            console.log("Found request:", request);
+            console.log("New request:", request);
             requests.push(request);
             const isError = request.response.status >= 400;
             const showOnlyErrors = errorFilterCheckbox.checked;
 
             if (!showOnlyErrors || isError) {
-                console.log("Adding request to table...");
                 addRequestToTable(request);
             }
-
         });
-
-        errorFilterCheckbox.addEventListener("change", updateTable);
     }
+
 
     function initSettingsTab() {
         const saveButton = document.getElementById("saveSettings");
